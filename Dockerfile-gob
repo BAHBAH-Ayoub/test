@@ -1,0 +1,16 @@
+FROM centos:7
+ARG envi
+ENV envi ${envi}
+RUN yum -y update && yum install -y wget
+RUN wget https://repository.rnd.amadeus.net/sfb-tools/com/oracle/jdk/8u111/jdk-8u111-linux-x64.tar.gz -q -P / \
+&& tar -xzf jdk-8u111-linux-x64.tar.gz -C /opt \
+&& rm -f /jdk-8u111-linux-x64.tar.gz
+ENV JAVA_HOME /opt/jdk1.8.0_111
+ENV PATH $PATH:$JAVA_HOME/bin
+ADD ./target/controltower-1.0.8.jar /home/
+ADD ./activation-service.jks /home/
+ADD ./c_tower.keystore /home/
+EXPOSE 8080
+RUN chown -R 1001:0 /home/ && chmod -R ug+rwX /home/
+USER 1001
+CMD ["sh", "-c", "java -jar -Dspring.profiles.active=${envi} -Djavax.net.ssl.trustStore=/home/activation-service.jks -Djavax.net.ssl.trustStorePassword=changeit -Dapp.ctower.keyStore=/home/c_tower.keystore -Dapp.ctower.keyStorePassword=${KEYSTORE_PASSWORD} -Dapp.ctower.jenkinsToken=${JENKINS_TOKEN} -Dapp.ctower.artifactoryToken=${ARTIFACTORY_TOKEN} -Dapp.ctower.ui=${UI_URL} -Dapp.ctower.callbackhost=${SERVICE_URL} -DdatasourceUrl=${DATASOURCE_URL} -DdatasourceUser=${DATASOURCE_USERNAME} -DdatasourcePwd=${DATASOURCE_PASSWORD} -DbitbucketUrl=${BITBUCKET_URL} -DsonarqubeUrl=${SONARQUBE_URL} -DsonarqubeToken=${SONARQUBE_TOKEN} -DrabbitmqHost=${RABBITMQ_HOST} -DwebserviceToken=${WEBSERVICE_TOKEN} /home/controltower-1.0.8.jar"]
